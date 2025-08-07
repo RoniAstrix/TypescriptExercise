@@ -1,9 +1,20 @@
 const request = require('supertest');
 const app = require('../messageServer');
 
+interface Message {
+  id: string;
+  content: string;
+  recipient: string;
+  timestamp: Date;
+}
+
+interface AppWithMessages {
+  messages?: Map<string, Message[]>;
+}
+
 describe('Message Server', () => {
   beforeEach(() => {
-    const messages = (app as any).messages || new Map();
+    const messages = (app as AppWithMessages).messages || new Map();
     messages.clear();
   });
 
@@ -11,7 +22,7 @@ describe('Message Server', () => {
     it('should send a message successfully', async () => {
       const messageData = {
         recipient: 'alice',
-        message: 'Hello, Alice!'
+        message: 'Hello, Alice!',
       };
 
       const response = await request(app)
@@ -25,8 +36,8 @@ describe('Message Server', () => {
         data: {
           id: expect.any(String),
           recipient: 'alice',
-          timestamp: expect.any(String)
-        }
+          timestamp: expect.any(String),
+        },
       });
     });
 
@@ -34,14 +45,11 @@ describe('Message Server', () => {
       const messages = [
         { recipient: 'bob', message: 'First message' },
         { recipient: 'bob', message: 'Second message' },
-        { recipient: 'bob', message: 'Third message' }
+        { recipient: 'bob', message: 'Third message' },
       ];
 
       for (const msg of messages) {
-        await request(app)
-          .post('/send')
-          .send(msg)
-          .expect(201);
+        await request(app).post('/send').send(msg).expect(201);
       }
 
       const response = await request(app)
@@ -76,7 +84,7 @@ describe('Message Server', () => {
 
       expect(response.body).toEqual({
         error: 'Invalid recipient',
-        message: 'Recipient is required and must be a string'
+        message: 'Recipient is required and must be a string',
       });
     });
 
@@ -88,7 +96,7 @@ describe('Message Server', () => {
 
       expect(response.body).toEqual({
         error: 'Invalid message',
-        message: 'Message is required and must be a string'
+        message: 'Message is required and must be a string',
       });
     });
 
@@ -100,7 +108,7 @@ describe('Message Server', () => {
 
       expect(response.body).toEqual({
         error: 'Invalid recipient',
-        message: 'Recipient is required and must be a string'
+        message: 'Recipient is required and must be a string',
       });
     });
 
@@ -112,7 +120,7 @@ describe('Message Server', () => {
 
       expect(response.body).toEqual({
         error: 'Invalid message',
-        message: 'Message is required and must be a string'
+        message: 'Message is required and must be a string',
       });
     });
 
@@ -124,7 +132,7 @@ describe('Message Server', () => {
 
       expect(response.body).toEqual({
         error: 'Invalid recipient',
-        message: 'Recipient is required and must be a string'
+        message: 'Recipient is required and must be a string',
       });
     });
 
@@ -136,20 +144,17 @@ describe('Message Server', () => {
 
       expect(response.body).toEqual({
         error: 'Invalid message',
-        message: 'Message is required and must be a string'
+        message: 'Message is required and must be a string',
       });
     });
 
     it('should handle special characters in message', async () => {
       const messageData = {
         recipient: 'test',
-        message: 'Hello! 🎉 Special chars: @#$%^&*()_+-=[]{}|;:,.<>?'
+        message: 'Hello! 🎉 Special chars: @#$%^&*()_+-=[]{}|;:,.<>?',
       };
 
-      await request(app)
-        .post('/send')
-        .send(messageData)
-        .expect(201);
+      await request(app).post('/send').send(messageData).expect(201);
 
       const response = await request(app)
         .get('/recv')
@@ -163,13 +168,10 @@ describe('Message Server', () => {
       const longMessage = 'A'.repeat(10000);
       const messageData = {
         recipient: 'test',
-        message: longMessage
+        message: longMessage,
       };
 
-      await request(app)
-        .post('/send')
-        .send(messageData)
-        .expect(201);
+      await request(app).post('/send').send(messageData).expect(201);
 
       const response = await request(app)
         .get('/recv')
@@ -203,11 +205,11 @@ describe('Message Server', () => {
             {
               id: expect.any(String),
               content: 'Hello, Charlie!',
-              timestamp: expect.any(String)
-            }
+              timestamp: expect.any(String),
+            },
           ],
-          count: 1
-        }
+          count: 1,
+        },
       });
     });
 
@@ -223,8 +225,8 @@ describe('Message Server', () => {
         data: {
           recipient: 'nonexistent',
           messages: [],
-          count: 0
-        }
+          count: 0,
+        },
       });
     });
 
@@ -236,10 +238,7 @@ describe('Message Server', () => {
         .expect(201);
 
       // Retrieve the message
-      await request(app)
-        .get('/recv')
-        .query({ recipient: 'david' })
-        .expect(200);
+      await request(app).get('/recv').query({ recipient: 'david' }).expect(200);
 
       // Try to retrieve again - should be empty
       const response = await request(app)
@@ -252,13 +251,11 @@ describe('Message Server', () => {
     });
 
     it('should return 400 when recipient parameter is missing', async () => {
-      const response = await request(app)
-        .get('/recv')
-        .expect(400);
+      const response = await request(app).get('/recv').expect(400);
 
       expect(response.body).toEqual({
         error: 'Invalid recipient',
-        message: 'Recipient parameter is required'
+        message: 'Recipient parameter is required',
       });
     });
 
@@ -274,8 +271,8 @@ describe('Message Server', () => {
         data: {
           recipient: '123',
           messages: [],
-          count: 0
-        }
+          count: 0,
+        },
       });
     });
 
@@ -287,7 +284,7 @@ describe('Message Server', () => {
 
       expect(response.body).toEqual({
         error: 'Invalid recipient',
-        message: 'Recipient parameter is required'
+        message: 'Recipient parameter is required',
       });
     });
 
@@ -330,15 +327,13 @@ describe('Message Server', () => {
 
   describe('GET /health', () => {
     it('should return health status', async () => {
-      const response = await request(app)
-        .get('/health')
-        .expect(200);
+      const response = await request(app).get('/health').expect(200);
 
       expect(response.body).toEqual({
         status: 'healthy',
         message: 'Message server is running',
         endpoints: ['POST /send', 'GET /recv'],
-        totalRecipients: 0
+        totalRecipients: 0,
       });
     });
 
@@ -353,9 +348,7 @@ describe('Message Server', () => {
         .send({ recipient: 'bob', message: 'Hello' })
         .expect(201);
 
-      const response = await request(app)
-        .get('/health')
-        .expect(200);
+      const response = await request(app).get('/health').expect(200);
 
       expect(response.body.totalRecipients).toBe(2);
     });
@@ -367,7 +360,7 @@ describe('Message Server', () => {
         request(app)
           .post('/send')
           .send({ recipient: 'concurrent', message: `Message ${i}` })
-          .expect(201)
+          .expect(201),
       );
 
       await Promise.all(promises);
@@ -390,12 +383,12 @@ describe('Message Server', () => {
         request(app)
           .get('/recv')
           .query({ recipient: 'concurrent' })
-          .expect(200)
+          .expect(200),
       );
 
       const responses = await Promise.all(promises);
 
-      const messagesReceived = responses.filter(r => r.body.data.count > 0);
+      const messagesReceived = responses.filter((r) => r.body.data.count > 0);
       expect(messagesReceived).toHaveLength(1);
     });
 
@@ -418,4 +411,4 @@ describe('Message Server', () => {
       expect(response.body.error).toBeDefined();
     });
   });
-}); 
+});
